@@ -1,0 +1,98 @@
+---
+title: "project 8"
+author: "George Pitsavas"
+date: "12/8/2020"
+output: html_document
+---
+
+# Data Preparation
+```{r}
+
+library(caret)
+library(rpart)
+library(randomForest)
+library(gbm)
+library(e1071)
+set.seed(1234)
+```
+# Downloading data
+
+# For training data
+```{r}
+trainingDataUrl<-"https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+trainingData<-read.csv(url(trainingDataUrl),na.strings = c("NA","#DIV/0!",""))
+```
+
+# For test data
+```{r}
+testingDataUrl<- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+testingData<-read.csv(url(testingDataUrl),na.strings = c("NA","#DIV/0!",""))
+```
+
+```{r}
+dim(trainingData)
+dim(testingData)
+```
+Removing missing values from training data.
+
+```{r}
+sum(is.na(trainingData))
+trainingData<-trainingData[,colSums(is.na(trainingData))==0]
+trainingData<-trainingData[,-c(1:7)]
+
+dim(trainingData)
+```
+
+Removing missing values from test data
+
+```{r}
+is.na(testingData)
+testingData<-testingData[,colSums(is.na(testingData))==0]
+testingData<-testingData[,-c(1:7)]
+
+dim(testingData)
+```
+
+
+# Partitioning in training dataset
+```{r}
+NEWdata<-createDataPartition(trainingData$classe,p=0.7,list=F)
+trainingNEWdata<-trainingData[NEWdata,]
+testingNEWdata<-trainingData[-NEWdata,]
+
+dim(trainingNEWdata)
+dim(testingNEWdata)
+```
+
+```{r}
+ggplot(data = trainingNEWdata,aes(classe))+geom_bar(fill="darkslateblue")+labs(title = "Frequency of Different Levels",y="Frequency")
+```
+According to the plot about frequency distribution, it reveals that level A is most frequent and level D is the least one in training dataset.
+
+
+# Prediction using Random Forest
+
+```{r}
+summary(testingNEWdata)
+modelRF<- randomForest(as.factor(classe) ~., data = trainingNEWdata, method="class")
+predictionRF<- predict(modelRF, testingNEWdata, type= "class")
+confusionMatrix(table(predictionRF,testingNEWdata$classe))
+```
+The accurancy of the random forest model is 99,51%
+
+# Prediction using Generalized Boosted Model
+```{r}
+fitcontrol<-trainControl(method = "repeatedcv",number = 5,repeats = 1)
+modelGBM<-train(classe~.,data=trainingNEWdata,method="gbm",trControl=fitcontrol,verbose=F)
+
+predictionGBM<-predict(modelGBM,testingNEWdata)
+confusionMatrix(table(predictionGBM,testingNEWdata$classe))
+```
+The accurancy of the Generalized Boosted Model is 96,69%. It is obviously smaller value than random forest's accuracy.Thus we gonna use the prediction that are made via random Forest method , because it is more accurate.We will apply to random forest model the prediction we need for the 20 quiz results.
+
+
+
+```{r}
+predictTest<- predict(modelRF,testingData)
+predictTest
+```
