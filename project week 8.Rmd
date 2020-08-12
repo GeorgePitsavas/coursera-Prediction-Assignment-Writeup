@@ -46,7 +46,7 @@ dim(trainingData)
 Removing missing values from test data
 
 ```{r}
-is.na(testingData)
+sum(is.na(testingData))
 testingData<-testingData[,colSums(is.na(testingData))==0]
 testingData<-testingData[,-c(1:7)]
 
